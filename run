@@ -1,0 +1,192 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local UIS = game:GetService("UserInputService")
+
+----------------------------------------------------------------
+-- ScreenGui
+----------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "MusicGuiPanel"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+
+----------------------------------------------------------------
+-- 메인 창
+----------------------------------------------------------------
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 430, 0, 220)
+frame.Position = UDim2.new(0.5, -210, 0.42, -100)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+frame.BorderSizePixel = 0
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(0, 255, 130)
+stroke.Transparency = .25
+
+----------------------------------------------------------------
+-- 상단 제목
+----------------------------------------------------------------
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -20, 0, 40)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "MUSIC GUI CONTROL PANEL"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+title.TextColor3 = Color3.fromRGB(0,255,140)
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+----------------------------------------------------------------
+-- 입력 박스 배경
+----------------------------------------------------------------
+local boxBg = Instance.new("Frame", frame)
+boxBg.Size = UDim2.new(1,-20,0,45)
+boxBg.Position = UDim2.new(0,10,0,55)
+boxBg.BackgroundColor3 = Color3.fromRGB(35,35,40)
+boxBg.BorderSizePixel = 0
+Instance.new("UICorner", boxBg).CornerRadius = UDim.new(0,10)
+
+local boxStroke = Instance.new("UIStroke", boxBg)
+boxStroke.Color = Color3.fromRGB(0,255,120)
+boxStroke.Transparency = .5
+
+----------------------------------------------------------------
+-- 입력창
+----------------------------------------------------------------
+local nameBox = Instance.new("TextBox", boxBg)
+nameBox.Size = UDim2.new(1,-55,1,0)
+nameBox.Position = UDim2.new(0,10,0,0)
+nameBox.BackgroundTransparency = 1
+nameBox.Text = ""
+nameBox.PlaceholderText = "플레이어 이름을 입력하세요"
+nameBox.Font = Enum.Font.GothamSemibold
+nameBox.TextSize = 18
+nameBox.TextColor3 = Color3.fromRGB(255,255,255)
+nameBox.PlaceholderColor3 = Color3.fromRGB(170,170,170)
+nameBox.ClearTextOnFocus = false
+
+----------------------------------------------------------------
+-- 자동완성 버튼
+----------------------------------------------------------------
+local auto = Instance.new("TextButton", boxBg)
+auto.Size = UDim2.new(0,40,0,40)
+auto.Position = UDim2.new(1,-45,0,3)
+auto.Text = "→"
+auto.Font = Enum.Font.GothamBold
+auto.TextSize = 20
+auto.TextColor3 = Color3.fromRGB(0,0,0)
+auto.BackgroundColor3 = Color3.fromRGB(0,255,130)
+Instance.new("UICorner", auto).CornerRadius = UDim.new(0,10)
+
+----------------------------------------------------------------
+-- 버튼 두 개
+----------------------------------------------------------------
+local fetch = Instance.new("TextButton", frame)
+fetch.Size = UDim2.new(.48,-10,0,50)
+fetch.Position = UDim2.new(.02,0,0,135)
+fetch.Text = "가져오기"
+fetch.Font = Enum.Font.GothamBlack
+fetch.TextSize = 20
+fetch.TextColor3 = Color3.fromRGB(0,0,0)
+fetch.BackgroundColor3 = Color3.fromRGB(0,255,130)
+Instance.new("UICorner", fetch).CornerRadius = UDim.new(0,10)
+
+local delete = Instance.new("TextButton", frame)
+delete.Size = UDim2.new(.48,-10,0,50)
+delete.Position = UDim2.new(.50,10,0,135)
+delete.Text = "삭제"
+delete.Font = Enum.Font.GothamBlack
+delete.TextSize = 20
+delete.TextColor3 = Color3.fromRGB(255,255,255)
+delete.BackgroundColor3 = Color3.fromRGB(255,70,70)
+Instance.new("UICorner", delete).CornerRadius = UDim.new(0,10)
+
+----------------------------------------------------------------
+-- 드래그 활성화
+----------------------------------------------------------------
+local dragging = false
+local dragStart, startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+	end
+end)
+
+frame.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		update(input)
+	end
+end)
+
+----------------------------------------------------------------
+-- 자동완성
+----------------------------------------------------------------
+auto.MouseButton1Click:Connect(function()
+	local txt = nameBox.Text
+	if txt == "" then return end
+
+	for _,p in ipairs(Players:GetPlayers()) do
+		if string.sub(string.lower(p.Name),1,#txt) == string.lower(txt) then
+			nameBox.Text = p.Name
+			title.Text = "플레이어 선택: " .. p.Name
+			return
+		end
+	end
+
+	title.Text = "플레이어를 찾을 수 없음"
+end)
+
+----------------------------------------------------------------
+-- 가져오기 기능
+----------------------------------------------------------------
+fetch.MouseButton1Click:Connect(function()
+	local target = Players:FindFirstChild(nameBox.Text)
+	if not target then
+		title.Text = "플레이어 없음"
+		return
+	end
+
+	local backpack = target:FindFirstChild("Backpack")
+	if not backpack then title.Text="Backpack 없음" return end
+
+	local tool = backpack:FindFirstChild("Music")
+	if not tool then title.Text="Music 툴 없음" return end
+
+	local guiObject = tool:FindFirstChild("MusicPGui")
+	if not guiObject then title.Text="MusicPGui 없음" return end
+
+	guiObject:Clone().Parent = PlayerGui
+	title.Text = "가져오기 완료"
+end)
+
+----------------------------------------------------------------
+-- 삭제 기능
+----------------------------------------------------------------
+delete.MouseButton1Click:Connect(function()
+	local g = PlayerGui:FindFirstChild("MusicPGui")
+	if g then
+		g:Destroy()
+		title.Text = "삭제 완료"
+	else
+		title.Text = "삭제할 GUI 없음"
+	end
+end)
